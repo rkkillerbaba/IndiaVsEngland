@@ -3,13 +3,11 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, shrink-to-fit=no">
-    <title>IND vs ENG Live - Patched OTT Hub</title>
+    <title>IND vs ENG Live - Fixed Hub</title>
     
-    <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800;900&display=swap" rel="stylesheet">
     
-    <!-- Shaka Player UI CSS & JS Engine -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/shaka-player/4.3.5/controls.css">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/shaka-player/4.3.5/shaka-player.compiled.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/shaka-player/4.3.5/shaka-player.ui.js"></script>
@@ -37,7 +35,7 @@
             box-shadow: 0 25px 60px rgba(0, 0, 0, 0.7);
         }
 
-        /* STRICT SHAKA PLAYER BROWSER OVERRIDES */
+        /* STRICT SHAKA PLAYER CLEANUP */
         video::-webkit-media-controls,
         video::-webkit-media-controls-enclosure,
         video::-webkit-media-controls-panel,
@@ -82,7 +80,7 @@
             border: 1px solid rgba(255,255,255,0.25);
         }
         .live-badge-glow .pulse-dot { width: 8px; height: 8px; border-radius: 50%; background-color: white; }
-        .live-badge-glow.is-active .pulse-dot { animation: ultra-pulse 1.3s infinite alternate; box-shadow: 0 0 10px white; }
+        .live-badge-glow.is-live .pulse-dot { animation: ultra-pulse 1.3s infinite alternate; box-shadow: 0 0 10px white; }
         
         @keyframes ultra-pulse {
             0% { opacity: 0.2; transform: scale(0.7); }
@@ -93,7 +91,6 @@
 </head>
 <body class="antialiased">
 
-    <!-- Header Section -->
     <header class="w-full max-w-4xl p-4 md:mt-4 mt-2 mx-2 md:mx-auto rounded-2xl flex justify-between items-center z-10 bg-gradient-to-r from-blue-700 via-indigo-600 to-orange-500 shadow-[0_0_30px_rgba(59,130,246,0.4)] border border-white/10">
         <div class="flex items-center gap-3">
             <div class="w-3 h-3 bg-orange-400 rounded-full shadow-[0_0_12px_#fb923c]"></div>
@@ -104,13 +101,11 @@
         </div>
     </header>
 
-    <!-- Main Content Frame -->
     <main class="w-full max-w-4xl px-3 mt-4 flex flex-col gap-4 z-10 flex-grow">
         
-        <!-- Video Player Display Box -->
         <div class="video-frame-panel glass-card w-full p-1 overflow-hidden">
             <div class="w-full aspect-video bg-black rounded-2xl overflow-hidden relative" id="video-container">
-                <div id="ott-live-badge" class="live-badge-glow is-active cursor-pointer">
+                <div id="ott-live-badge" class="live-badge-glow is-live cursor-pointer">
                     <span class="pulse-dot"></span>
                     <span id="live-text" class="uppercase">LIVE</span>
                 </div>
@@ -118,17 +113,15 @@
             </div>
         </div>
 
-        <!-- Realtime Commentary Ticker Scroll -->
         <div class="ticker-wrap w-full bg-slate-950/90 border border-white/5 py-3 px-5 rounded-2xl overflow-hidden shadow-2xl">
             <div class="flex items-center gap-4">
                 <span class="bg-gradient-to-r from-orange-500 to-amber-500 text-slate-950 text-[10px] font-black px-2.5 py-1 rounded-md uppercase tracking-widest animate-pulse flex-shrink-0 shadow-md">Commentary</span>
                 <marquee id="live-ticker-text" class="text-xs md:text-sm text-slate-200 font-bold tracking-wide" scrollamount="4">
-                    🏏 Syncing data tracks over Star Sports live node... Decryption handshake processing active.
+                    Apply patched parameters... Connecting to clean Jio CDN nodes.
                 </marquee>
             </div>
         </div>
 
-        <!-- Scoreboard Widget -->
         <div class="scoreboard-section glass-card p-6 flex flex-col gap-5 mb-4 relative overflow-hidden">
             <div class="flex justify-between items-center px-2 md:px-16 relative">
                 <div class="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-36 h-32 bg-blue-600/10 blur-3xl rounded-full -z-10"></div>
@@ -156,7 +149,7 @@
     </main>
 
     <footer class="w-full mt-auto py-4 bg-[#030712] border-t border-white/5 text-center text-xs text-slate-600">
-        <p>CRIC Stream Hub Pro • Ver 5.6</p>
+        <p>CRIC Stream Hub Pro • Ver 5.7</p>
     </footer>
 
     <script>
@@ -191,10 +184,14 @@
             ui = new shaka.ui.Overlay(player, videoContainer, video);
             ui.configure(uiConfig);
             
-            // 🛠️ CRITICAL FIXED: Wildcard wildcard validation bypass logic
+            // 🛠️ CRITICAL FIX: Credentials completely turned false to clear Wildcard '*' bug
             player.getNetworkingEngine().registerRequestFilter((type, request) => {
-                // FIXED: Removed strict cross-site credentials true to drop the Wildcard '*' crash rule
                 request.allowCrossSiteCredentials = false; 
+
+                // Purani broken strings ya workers block addresses ko clean out karna
+                if (request.uris[0].includes('rkkillerbaba.workers.dev')) {
+                    request.uris[0] = request.uris[0].replace(/https:\/\/.*\.workers\.dev\//g, 'https://jiotvpllive.cdn.jio.com/');
+                }
                 
                 if (type === shaka.net.NetworkingEngine.RequestType.SEGMENT && request.uris[0].includes('index.mpd/dash/')) {
                     request.uris[0] = request.uris[0].replace('index.mpd/dash/', '');
@@ -236,7 +233,7 @@
                     document.getElementById('team2-name').innerText = awayTeam.team.abbreviation || "ENG";
                     document.getElementById('match-score').innerText = `${homeTeam.score || '0'} vs ${awayTeam.score || '0'}`;
                     document.getElementById('match-status').innerText = match.status.type.detail || "LIVE";
-                    document.getElementById('live-ticker-text').innerText = `🏏 Feed: ${match.note || match.name} — Status: ${match.status.type.detail}`;
+                    document.getElementById('live-ticker-text').innerText = `🏏 Match: ${match.note || match.name} — Status: ${match.status.type.detail}`;
                 } else {
                     fallbackStaticData();
                 }
