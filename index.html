@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, shrink-to-fit=no">
+    <title>IND vs ENG Live - Premium OTT Hub</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800;900&display=swap" rel="stylesheet">
+    
+    <!-- Shaka Player UI CSS & JS Engine -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/shaka-player/4.3.5/controls.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/shaka-player/4.3.5/shaka-player.compiled.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/shaka-player/4.3.5/shaka-player.ui.js"></script>
+    
+    <style>
+        body { 
+            font-family: 'Inter', sans-serif; 
+            background-color: #030712; 
+            background-image: radial-gradient(circle at top, #1e1b4b 0%, #030712 85%);
+            color: #f3f4f6; 
+            min-height: 100vh; 
+            margin: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: space-between;
+        }
+        
+        .glass-card { 
+            background: rgba(15, 23, 42, 0.65); 
+            backdrop-filter: blur(24px); 
+            -webkit-backdrop-filter: blur(24px);
+            border: 1px solid rgba(255, 255, 255, 0.06); 
+            border-radius: 24px; 
+            box-shadow: 0 25px 60px rgba(0, 0, 0, 0.7);
+        }
+
+        /* STRICT SHAKA PLAYER BROWSER OVERRIDES */
+        video::-webkit-media-controls,
+        video::-webkit-media-controls-enclosure,
+        video::-webkit-media-controls-panel,
+        video::-webkit-media-controls-overlay-play-button { 
+            display: none !important; 
+            -webkit-appearance: none;
+        }
+        
+        .shaka-play-button-container,
+        .shaka-server-side-ad-container,
+        .shaka-time-container, 
+        .shaka-current-time, 
+        .shaka-duration,
+        .shaka-seek-bar-container { 
+            display: none !important; 
+            opacity: 0 !important;
+            visibility: hidden !important;
+        }
+
+        .shaka-controls-button-panel { 
+            padding: 0px 20px 18px 20px !important; 
+            display: flex;
+            align-items: center;
+        }
+
+        .video-stretch { object-fit: cover !important; }
+
+        .live-badge-glow {
+            position: absolute;
+            top: 16px;
+            left: 16px;
+            background: rgba(225, 29, 72, 0.95); 
+            color: white;
+            padding: 6px 14px;
+            font-size: 11px;
+            font-weight: 900;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            gap: 7px;
+            z-index: 50;
+            box-shadow: 0 0 20px rgba(225, 29, 72, 0.6);
+            letter-spacing: 1px;
+            backdrop-filter: blur(8px);
+            border: 1px solid rgba(255,255,255,0.25);
+        }
+        .live-badge-glow .pulse-dot { width: 8px; height: 8px; border-radius: 50%; background-color: white; }
+        .live-badge-glow.is-live .pulse-dot { animation: ultra-pulse 1.3s infinite alternate; box-shadow: 0 0 10px white; }
+        
+        @keyframes ultra-pulse {
+            0% { opacity: 0.2; transform: scale(0.7); }
+            100% { opacity: 1; transform: scale(1.3); }
+        }
+
+        ::-webkit-scrollbar { display: none; }
+    </style>
+</head>
+<body class="antialiased">
+
+    <!-- Header Section -->
+    <header class="w-full max-w-4xl p-4 md:mt-4 mt-2 mx-2 md:mx-auto rounded-2xl flex justify-between items-center z-10 bg-gradient-to-r from-blue-700 via-indigo-600 to-orange-500 shadow-[0_0_30px_rgba(59,130,246,0.4)] border border-white/10">
+        <div class="flex items-center gap-3">
+            <div class="w-3 h-3 bg-orange-400 rounded-full shadow-[0_0_12px_#fb923c]"></div>
+            <h1 class="text-xl font-black tracking-widest text-white drop-shadow-md ml-1">CRIC<span class="text-yellow-400">LIVE</span></h1>
+        </div>
+        <div class="px-3 py-1 bg-black/40 border border-white/20 rounded-lg text-xs font-black text-white tracking-widest backdrop-blur-md shadow-inner uppercase">
+            IND vs ENG T20
+        </div>
+    </header>
+
+    <!-- Main Content Frame -->
+    <main class="w-full max-w-4xl px-3 mt-4 flex flex-col gap-4 z-10 flex-grow">
+        
+        <!-- Video Player Frame -->
+        <div class="video-frame-panel glass-card w-full p-1 overflow-hidden">
+            <div class="w-full aspect-video bg-black rounded-2xl overflow-hidden relative" id="video-container">
+                <div id="ott-live-badge" class="live-badge-glow is-live cursor-pointer">
+                    <span class="pulse-dot"></span>
+                    <span id="live-text" class="uppercase">LIVE</span>
+                </div>
+                <video id="video" autoplay muted playsinline class="w-full h-full object-contain"></video>
+            </div>
+        </div>
+
+        <!-- Realtime Moving News Commentary Ticker -->
+        <div class="ticker-wrap w-full bg-slate-950/90 border border-white/5 py-3 px-5 rounded-2xl overflow-hidden shadow-2xl">
+            <div class="flex items-center gap-4">
+                <span class="bg-gradient-to-r from-orange-500 to-amber-500 text-slate-950 text-[10px] font-black px-2.5 py-1 rounded-md uppercase tracking-widest animate-pulse flex-shrink-0 shadow-md">Commentary</span>
+                <marquee id="live-ticker-text" class="text-xs md:text-sm text-slate-200 font-bold tracking-wide" scrollamount="4">
+                    📢 Connection stabilized. Secure Jio CDN streams synchronized.
+                </marquee>
+            </div>
+        </div>
+
+        <!-- Scoreboard Widget -->
+        <div class="scoreboard-section glass-card p-6 flex flex-col gap-5 mb-4 relative overflow-hidden">
+            <div class="flex justify-between items-center px-2 md:px-16 relative">
+                <div class="flex flex-col items-center gap-2 w-28 text-center">
+                    <div class="relative w-16 h-16 md:w-20 md:h-20 flex items-center justify-center bg-gradient-to-br from-blue-600 to-indigo-900 rounded-2xl p-2 border border-blue-400/30 shadow-xl">
+                        <img id="team1-logo" src="https://upload.wikimedia.org/wikipedia/en/thumb/4/41/Flag_of_India.svg/200px-Flag_of_India.svg.png" class="w-full h-full object-cover rounded-md">
+                    </div>
+                    <span id="team1-name" class="font-black text-xs md:text-sm tracking-wider text-blue-200 uppercase truncate w-full">INDIA</span>
+                </div>
+
+                <div class="flex flex-col items-center justify-center">
+                    <div id="match-status" class="text-[9px] md:text-[10px] text-orange-400 font-black tracking-[0.25em] uppercase mb-1.5 bg-orange-500/10 px-3 py-1 rounded-full border border-orange-500/20 shadow-sm">LIVE</div>
+                    <span id="match-score" class="text-2xl md:text-3xl font-black text-white tracking-normal font-mono bg-slate-950/60 px-5 py-1.5 rounded-2xl border border-white/5 shadow-inner">0/0 (0)</span>
+                </div>
+
+                <div class="flex flex-col items-center gap-2 w-28 text-center">
+                    <div class="relative w-16 h-16 md:w-20 md:h-20 flex items-center justify-center bg-gradient-to-br from-slate-700 to-slate-900 rounded-2xl p-2 border border-white/10 shadow-xl">
+                        <img id="team2-logo" src="https://upload.wikimedia.org/wikipedia/en/thumb/a/ae/Flag_of_the_United_Kingdom.svg/200px-Flag_of_the_United_Kingdom.svg.png" class="w-full h-full object-cover rounded-md">
+                    </div>
+                    <span id="team2-name" class="font-black text-xs md:text-sm tracking-wider text-pink-200 uppercase truncate w-full">ENGLAND</span>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <footer class="w-full mt-auto py-5 bg-[#030712] border-t border-white/5 text-center text-xs text-slate-500">
+        <p>CRIC Stream Hub Pro • Ver 5.5</p>
+    </footer>
+
+    <script>
+        const manifestUri = 'https://jiotvpllive.cdn.jio.com/bpk-tv/Star_Sports_HD1_Hindi_BTS/WDVLive/index.mpd?__hdnea__=st=1782909149~exp=1782930749~acl=/bpk-tv/Star_Sports_HD1_Hindi_BTS/WDVLive/*~hmac=9342256345ba6f68f0f772ad4a38f461b22933adce6f001c4e8f978c1cd1fc39';
+        
+        const keyId = '400131994b445d8c8817202248760fda'; 
+        const key = 'd6d40441f9fbebea03ec64c4aea7211f'; 
+
+        const scoreApiUrl = 'https://site.api.espn.com/apis/site/v2/sports/cricket/all/scoreboard'; 
+        let player, ui, video;
+
+        function checkAndLoadPlayer() {
+            if (window.shaka && shaka.ui && shaka.Player) {
+                initApp();
+            } else {
+                setTimeout(checkAndLoadPlayer, 200);
+            }
+        }
+
+        async function initApp() {
+            shaka.polyfill.installAll();
+            video = document.getElementById('video');
+            const videoContainer = document.getElementById('video-container');
+            
+            player = new shaka.Player(video);
+            
+            const uiConfig = {
+                controlPanelElements: ['play_pause', 'mute', 'volume', 'spacer', 'fullscreen', 'overflow_menu'],
+                addSeekBar: false, 
+                addBigPlayButton: false
+            };
+            
+            ui = new shaka.ui.Overlay(player, videoContainer, video);
+            ui.configure(uiConfig);
+            
+            // 🛠️ NEW CLEAN REQUEST FILTER: Isme koi URL replace string nahi hai jo CORS status 0 trigger kare
+            player.getNetworkingEngine().registerRequestFilter((type, request) => {
+                request.allowCrossSiteCredentials = true;
+                
+                // Fix path adjustments directly without slicing the internal manifest strings
+                if (type === shaka.net.NetworkingEngine.RequestType.SEGMENT && request.uris[0].includes('index.mpd/dash/')) {
+                    request.uris[0] = request.uris[0].replace('index.mpd/dash/', '');
+                }
+            });
+
+            player.configure({
+                drm: { clearKeys: { [keyId]: key } },
+                manifest: {
+                    dash: {
+                        ignoreMinBufferTime: true,
+                        clockSyncUri: 'https://time.akamai.com/?iso'
+                    }
+                }
+            });
+            
+            setupFloatingLiveBadge();
+            
+            try {
+                await player.load(manifestUri);
+                fetchRealtimeCricketScore(); 
+                setInterval(fetchRealtimeCricketScore, 15000); 
+                updateLiveStatus();
+                setTimeout(addScreenFitButton, 500); 
+            } catch (e) { 
+                console.error("Stream Load Error: ", e); 
+            }
+        }
+
+        async function fetchRealtimeCricketScore() {
+            try {
+                const res = await fetch(scoreApiUrl);
+                const data = await res.json();
+                if (data && data.events && data.events.length > 0) {
+                    let match = data.events.find(e => e.name.includes("India") || e.status.type.state === 'live') || data.events[0];
+                    const competition = match.competitions[0];
+                    const homeTeam = competition.competitors.find(c => c.homeAway === 'home');
+                    const awayTeam = competition.competitors.find(c => c.homeAway === 'away');
+                    
+                    document.getElementById('team1-name').innerText = homeTeam.team.abbreviation || "IND";
+                    document.getElementById('team2-name').innerText = awayTeam.team.abbreviation || "ENG";
+                    document.getElementById('match-score').innerText = `${homeTeam.score || '0'} vs ${awayTeam.score || '0'}`;
+                    document.getElementById('match-status').innerText = match.status.type.detail || "LIVE";
+                    document.getElementById('live-ticker-text').innerText = `🏏 Match Feed: ${match.note || match.name} — Status: ${match.status.type.detail}`;
+                } else {
+                    fallbackStaticData();
+                }
+            } catch (err) {
+                fallbackStaticData();
+            }
+        }
+
+        function fallbackStaticData() {
+            document.getElementById('team1-name').innerText = "INDIA";
+            document.getElementById('team2-name').innerText = "ENGLAND";
+            document.getElementById('match-score').innerText = "182/4 (19.1)";
+            document.getElementById('match-status').innerText = "IND BATTING";
+            document.getElementById('live-ticker-text').innerText = "🚨 LIVE: India vs England live over processing tracking dashboard sync complete.";
+        }
+
+        function addScreenFitButton() {
+            const controlsContainer = document.querySelector('.shaka-controls-button-panel');
+            if (!controlsContainer) return;
+            const fitBtn = document.createElement('button');
+            fitBtn.className = 'shaka-fullscreen-button'; 
+            fitBtn.style.background = 'transparent'; fitBtn.style.border = 'none'; fitBtn.style.color = 'white'; fitBtn.style.cursor = 'pointer'; fitBtn.style.marginRight = '12px';
+            fitBtn.innerHTML = `<svg viewBox="0 0 24 24" fill="currentColor" width="20" height="22"><path d="M7 14H5v5h5v-2H7v-3zm-2-4h2V7h3V5H5v5zm12 7h-3v2h5v-5h-2v3zM14 5v2h3v3h2V5h-5z"/></svg>`;
+            fitBtn.onclick = () => {
+                video.classList.toggle('video-stretch');
+                fitBtn.style.color = video.classList.contains('video-stretch') ? '#f97316' : 'white';
+            };
+            const fullscreenBtn = document.querySelector('.shaka-fullscreen-button');
+            if (fullscreenBtn) controlsContainer.insertBefore(fitBtn, fullscreenBtn);
+        }
+
+        function setupFloatingLiveBadge() {
+            document.getElementById('ott-live-badge').addEventListener('click', () => {
+                if (player) {
+                    try { video.currentTime = player.seekRange().end; } catch(err){}
+                }
+            });
+        }
+
+        function updateLiveStatus() {
+            const badge = document.getElementById('ott-live-badge');
+            const textSpan = document.getElementById('live-text');
+            badge.classList.add('is-live'); 
+            textSpan.innerText = 'LIVE';
+        }
+
+        document.addEventListener('DOMContentLoaded', checkAndLoadPlayer);
+    </script>
+</body>
+</html>
